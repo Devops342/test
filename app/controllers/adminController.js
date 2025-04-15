@@ -22,15 +22,30 @@ exports.getUserspagination = async (req, res) => {
 
    //console.log(req);
    //console.log(skip);
-    const users = await User.find()
+
+   const search = req.query.search || '';
+   const searchQuery = {
+     $or: [
+       { name: { $regex: search, $options: 'i' } },
+       { email: { $regex: search, $options: 'i' } }
+     ]
+   };
+
+
+
+    const users = await User.find(searchQuery)
       .select('-password -__v') 
       .skip(skip)
       .limit(limit)
       .exec();
     //console.log(users);
-    const total = await User.countDocuments();
+    const total = await User.countDocuments(searchQuery);
 
-
+    // if (users.length === 0) {
+    //   return res.status(404).json({
+    //     message: "No users found matching your search."
+    //   });
+    // }
     //console.log(total);
       res.status(200).json({
         page,
