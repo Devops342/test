@@ -12,6 +12,44 @@ exports.getUsers = async (req, res) => {
 };
 
 
+exports.getUserspagination = async (req, res) => {
+  //res.send("save");
+  try {
+    
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+   //console.log(req);
+   //console.log(skip);
+    const users = await User.find()
+      .select('-password -__v') 
+      .skip(skip)
+      .limit(limit)
+      .exec();
+    //console.log(users);
+    const total = await User.countDocuments();
+
+
+    //console.log(total);
+      res.status(200).json({
+        page,
+        limit,
+        totalItems: total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1,
+        nextPage: page < Math.ceil(total / limit) ? page + 1 : null,
+        prevPage: page > 1 ? page - 1 : null,
+        data: users
+      });
+
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).json({ message: 'Failed to fetch users', error: err.message });
+  }
+};
+
 exports.getUser = async (req, res) => {
   const { id } = req.params;
 
@@ -90,10 +128,6 @@ exports.adminAddUser = async (req, res) => {
   }
 };
 
-
-
-
-
 exports.updateUser = async (req, res) => {
   try {
     const { ID, username, email, mobile, role } = req.body;
@@ -101,7 +135,6 @@ exports.updateUser = async (req, res) => {
     if (!ID || !mongoose.Types.ObjectId.isValid(ID)) {
       return res.status(400).json({ message: "Valid user ID required" });
     }
-
     const updateFields = {};
     if (username) updateFields.username = username;
     if (email) updateFields.email = email;
